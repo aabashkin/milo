@@ -75,6 +75,11 @@ class XmlSerializationUtil {
       throws XMLStreamException {
 
     XMLInputFactory inputFactory = XMLInputFactory.newInstance();
+    
+    // XXE Prevention - disable external entity processing
+    inputFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
+    inputFactory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
+    
     XMLStreamReader reader = inputFactory.createXMLStreamReader(new StringReader(xmlFragment));
 
     while (reader.hasNext()) {
