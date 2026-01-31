@@ -1,0 +1,159 @@
+rules:
+  - id: opcua-private-key-file-permissions
+    patterns:
+      - pattern-either:
+          - pattern: |
+              new FileOutputStream("...$KEY...")
+          - pattern: |
+              new FileOutputStream("...$PRIVATE...")
+          - pattern: |
+              Files.write($PATH, $KEYDATA)
+      - metavariable-regex:
+          metavariable: $FILE
+          regex: .*(key|Key|KEY|private|Private|PRIVATE|pfx|p12|pem).*
+    message: >-
+      Private key file operation detected. Ensure private key files have restricted
+      file permissions (e.g., 0600 on Unix) to prevent unauthorized access. Consider
+      using secure key storage mechanisms like hardware security modules (HSM) or
+      key management services.
+    severity: WARNING
+    languages:
+      - java
+    metadata:
+      category: security
+      cwe: "CWE-732: Incorrect Permission Assignment for Critical Resource"
+      owasp: "A01:2021 - Broken Access Control"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - vuln
+
+  - id: opcua-keystore-in-temp-directory
+    patterns:
+      - pattern-either:
+          - pattern: |
+              Paths.get(System.getProperty("java.io.tmpdir"), ..., "$FILE")
+          - pattern: |
+              new File(System.getProperty("java.io.tmpdir"), "$FILE")
+      - metavariable-regex:
+          metavariable: $FILE
+          regex: .*(keystore|KeyStore|pfx|p12|jks).*
+    message: >-
+      Keystore stored in temporary directory detected. Temporary directories may have
+      weak permissions and are cleaned periodically, risking key loss or exposure.
+      Store keystores in secure, permanent locations with restricted access.
+    severity: WARNING
+    languages:
+      - java
+    metadata:
+      category: security
+      cwe: "CWE-379: Creation of Temporary File in Directory with Insecure Permissions"
+      owasp: "A01:2021 - Broken Access Control"
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - vuln
+
+  - id: opcua-certificate-without-validation
+    patterns:
+      - pattern-either:
+          - pattern: |
+              X509Certificate $CERT = ...;
+              ...
+              $CLIENT.connect();
+          - pattern: |
+              setCertificate($CERT)
+      - pattern-not-inside: |
+          CertificateValidator $VALIDATOR = ...;
+          ...
+    message: >-
+      Certificate usage without validation detected. Always validate certificates
+      against a trust store to prevent man-in-the-middle attacks. Implement proper
+      certificate chain validation, expiration checks, and revocation checking.
+    severity: WARNING
+    languages:
+      - java
+    metadata:
+      category: security
+      cwe: "CWE-295: Improper Certificate Validation"
+      confidence: LOW
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - vuln
+
+  - id: opcua-self-signed-certificate-in-production
+    patterns:
+      - pattern: SelfSignedCertificateBuilder
+      - pattern-not-inside: |
+          if ($ENV.equals("development") || $ENV.equals("test")) {
+            ...
+          }
+    message: >-
+      Self-signed certificate builder usage detected. Self-signed certificates should
+      only be used in development/testing environments. Production systems should use
+      certificates signed by a trusted Certificate Authority (CA) to enable proper
+      trust chain validation.
+    severity: WARNING
+    languages:
+      - java
+    metadata:
+      category: security
+      cwe: "CWE-295: Improper Certificate Validation"
+      owasp: "A02:2021 - Cryptographic Failures"
+      confidence: LOW
+      likelihood: LOW
+      impact: MEDIUM
+      subcategory:
+        - vuln
+
+  - id: opcua-certificate-expiry-not-checked
+    patterns:
+      - pattern: |
+          X509Certificate $CERT = ...;
+      - pattern-not-inside: |
+          $CERT.checkValidity();
+          ...
+      - pattern-not-inside: |
+          CertificateValidator $VALIDATOR = ...;
+          ...
+    message: >-
+      Certificate expiry validation may be missing. Always check certificate validity
+      dates to ensure certificates haven't expired. Use X509Certificate.checkValidity()
+      or implement comprehensive certificate validation.
+    severity: INFO
+    languages:
+      - java
+    metadata:
+      category: security
+      cwe: "CWE-295: Improper Certificate Validation"
+      confidence: LOW
+      likelihood: LOW
+      impact: MEDIUM
+      subcategory:
+        - vuln
+
+  - id: opcua-keystore-pkcs12-without-encryption
+    patterns:
+      - pattern: |
+          KeyStore.getInstance("PKCS12")
+      - pattern-inside: |
+          $KEYSTORE.store($OUT, null)
+    message: >-
+      PKCS12 keystore stored without password protection. Keystores should always be
+      encrypted with a strong password to protect private keys and certificates from
+      unauthorized access.
+    severity: ERROR
+    languages:
+      - java
+    metadata:
+      category: security
+      cwe: "CWE-311: Missing Encryption of Sensitive Data"
+      owasp: "A02:2021 - Cryptographic Failures"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory:
+        - vuln
