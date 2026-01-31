@@ -1,0 +1,126 @@
+rules:
+  - id: opcua-insecure-security-policy-none
+    patterns:
+      - pattern-either:
+          - pattern: SecurityPolicy.None
+          - pattern: setSecurityPolicy(SecurityPolicy.None)
+          - pattern: |
+              $CONFIG.setSecurityPolicy(SecurityPolicy.None)
+    message: >-
+      Insecure OPC UA security policy detected. SecurityPolicy.None provides no encryption
+      or message authentication. This allows attackers to eavesdrop on communications and
+      perform man-in-the-middle attacks. Use SecurityPolicy.Basic256Sha256 or
+      SecurityPolicy.Aes256_Sha256_RsaPss instead for production environments.
+    severity: ERROR
+    languages:
+      - java
+    metadata:
+      category: security
+      cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      owasp: "A02:2021 - Cryptographic Failures"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
+      references:
+        - https://reference.opcfoundation.org/Core/Part2/v105/docs/8.2
+        - https://cwe.mitre.org/data/definitions/327.html
+
+  - id: opcua-deprecated-security-policy
+    patterns:
+      - pattern-either:
+          - pattern: SecurityPolicy.Basic128Rsa15
+          - pattern: SecurityPolicy.Basic256
+          - pattern: setSecurityPolicy(SecurityPolicy.Basic128Rsa15)
+          - pattern: setSecurityPolicy(SecurityPolicy.Basic256)
+    message: >-
+      Deprecated OPC UA security policy detected. Basic128Rsa15 and Basic256 use weak
+      cryptographic algorithms (SHA-1) that are vulnerable to collision attacks.
+      Migrate to SecurityPolicy.Basic256Sha256 or SecurityPolicy.Aes256_Sha256_RsaPss
+      which use SHA-256.
+    severity: WARNING
+    languages:
+      - java
+    metadata:
+      category: security
+      cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      owasp: "A02:2021 - Cryptographic Failures"
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - vuln
+      references:
+        - https://reference.opcfoundation.org/Core/Part2/v105/docs/8.2
+
+  - id: opcua-message-security-mode-none
+    patterns:
+      - pattern-either:
+          - pattern: MessageSecurityMode.None
+          - pattern: setMessageSecurityMode(MessageSecurityMode.None)
+          - pattern: |
+              $CONFIG.setMessageSecurityMode(MessageSecurityMode.None)
+    message: >-
+      Insecure message security mode detected. MessageSecurityMode.None disables encryption
+      and message signing, exposing communications to eavesdropping and tampering.
+      Use MessageSecurityMode.SignAndEncrypt for production environments.
+    severity: ERROR
+    languages:
+      - java
+    metadata:
+      category: security
+      cwe: "CWE-319: Cleartext Transmission of Sensitive Information"
+      owasp: "A02:2021 - Cryptographic Failures"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
+      references:
+        - https://reference.opcfoundation.org/Core/Part4/v105/docs/7.15
+
+  - id: opcua-message-security-mode-sign-only
+    patterns:
+      - pattern-either:
+          - pattern: MessageSecurityMode.Sign
+          - pattern: setMessageSecurityMode(MessageSecurityMode.Sign)
+    message: >-
+      Weak message security mode detected. MessageSecurityMode.Sign provides integrity
+      but no confidentiality. Messages are transmitted in cleartext, exposing sensitive
+      data. Use MessageSecurityMode.SignAndEncrypt for production environments.
+    severity: WARNING
+    languages:
+      - java
+    metadata:
+      category: security
+      cwe: "CWE-319: Cleartext Transmission of Sensitive Information"
+      owasp: "A02:2021 - Cryptographic Failures"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - vuln
+
+  - id: opcua-security-policy-uri-none
+    patterns:
+      - pattern-either:
+          - pattern: |
+              "http://opcfoundation.org/UA/SecurityPolicy#None"
+          - pattern: |
+              fromUri("http://opcfoundation.org/UA/SecurityPolicy#None")
+    message: >-
+      Insecure security policy URI detected. The 'None' security policy provides no
+      encryption or authentication. Use secure policies like Basic256Sha256 or
+      Aes256_Sha256_RsaPss.
+    severity: ERROR
+    languages:
+      - java
+    metadata:
+      category: security
+      cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln

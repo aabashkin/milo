@@ -1,0 +1,165 @@
+rules:
+  - id: opcua-username-identity-without-encryption
+    patterns:
+      - pattern: UsernameProvider
+      - pattern-not-inside: |
+          SecurityPolicy $POLICY = SecurityPolicy.Basic256Sha256;
+          ...
+      - pattern-not-inside: |
+          SecurityPolicy $POLICY = SecurityPolicy.Aes256_Sha256_RsaPss;
+          ...
+      - pattern-not-inside: |
+          MessageSecurityMode.SignAndEncrypt
+          ...
+    message: >-
+      Username/password authentication without encryption detected. Transmitting
+      credentials without encryption exposes them to interception. Always use
+      SecurityPolicy with encryption (Basic256Sha256 or Aes256_Sha256_RsaPss) and
+      MessageSecurityMode.SignAndEncrypt when using username/password authentication.
+    severity: ERROR
+    languages:
+      - java
+    metadata:
+      category: security
+      cwe: "CWE-319: Cleartext Transmission of Sensitive Information"
+      owasp: "A02:2021 - Cryptographic Failures"
+      confidence: MEDIUM
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory:
+        - vuln
+
+  - id: opcua-empty-identity-validator
+    patterns:
+      - pattern-either:
+          - pattern: |
+              setIdentityValidator($TOKEN, $AUTH -> true)
+          - pattern: |
+              setIdentityValidator($TOKEN, $AUTH -> Optional.of($USER))
+          - pattern: |
+              new UsernameIdentityValidator(true, ...)
+    message: >-
+      Weak or empty identity validator detected. Validators that always return true
+      or don't check credentials allow unauthorized access. Implement proper credential
+      verification with secure password storage and comparison.
+    severity: ERROR
+    languages:
+      - java
+    metadata:
+      category: security
+      cwe: "CWE-287: Improper Authentication"
+      owasp: "A07:2021 - Identification and Authentication Failures"
+      confidence: MEDIUM
+      likelihood: HIGH
+      impact: CRITICAL
+      subcategory:
+        - vuln
+
+  - id: opcua-user-token-policy-without-security
+    patterns:
+      - pattern: |
+          UserTokenPolicy.newBuilder()
+            ...
+            .securityPolicyUri(SecurityPolicy.None.getUri())
+            ...
+            .build()
+    message: >-
+      User token policy configured without security. Tokens transmitted without
+      encryption can be intercepted and replayed. Always configure user token policies
+      with appropriate security policies.
+    severity: ERROR
+    languages:
+      - java
+    metadata:
+      category: security
+      cwe: "CWE-319: Cleartext Transmission of Sensitive Information"
+      owasp: "A02:2021 - Cryptographic Failures"
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
+
+  - id: opcua-missing-authorization-check
+    patterns:
+      - pattern: |
+          @UaMethod
+          public $RET $METHOD(...) {
+            ...
+          }
+      - pattern-not-inside: |
+          if ($SESSION.checkAccess(...)) {
+            ...
+          }
+      - pattern-not-inside: |
+          $SESSION.checkPermissions(...);
+          ...
+    message: >-
+      OPC UA method without authorization check detected. All sensitive operations
+      should verify that the authenticated user has appropriate permissions before
+      execution. Implement proper authorization checks.
+    severity: WARNING
+    languages:
+      - java
+    metadata:
+      category: security
+      cwe: "CWE-862: Missing Authorization"
+      owasp: "A01:2021 - Broken Access Control"
+      confidence: LOW
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - vuln
+
+  - id: opcua-insecure-session-timeout
+    patterns:
+      - pattern-either:
+          - pattern: |
+              setSessionTimeout(0)
+          - pattern: |
+              setSessionTimeout($TIMEOUT)
+      - metavariable-comparison:
+          metavariable: $TIMEOUT
+          comparison: $TIMEOUT > 86400000
+    message: >-
+      Insecure session timeout configuration detected. Sessions that never expire
+      (timeout=0) or have very long timeouts increase the window for session hijacking.
+      Use reasonable timeouts (e.g., 1-24 hours) based on security requirements.
+    severity: WARNING
+    languages:
+      - java
+    metadata:
+      category: security
+      cwe: "CWE-613: Insufficient Session Expiration"
+      owasp: "A07:2021 - Identification and Authentication Failures"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - vuln
+
+  - id: opcua-password-in-plaintext-memory
+    patterns:
+      - pattern-either:
+          - pattern: |
+              String $PASSWORD = $AUTH.getPassword();
+          - pattern: |
+              String $PWD = ...getPassword();
+    message: >-
+      Password stored as String in memory. Strings are immutable in Java and remain
+      in memory until garbage collected, increasing exposure window. Use char[] for
+      passwords and clear them immediately after use with Arrays.fill(passwordArray, '\0').
+    severity: WARNING
+    languages:
+      - java
+    metadata:
+      category: security
+      cwe: "CWE-316: Cleartext Storage of Sensitive Information in Memory"
+      owasp: "A02:2021 - Cryptographic Failures"
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - vuln
+      references:
+        - https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html#PBEEx

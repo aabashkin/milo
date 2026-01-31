@@ -1,0 +1,26 @@
+# Eclipse Milo OPC UA Security Semgrep Rules
+# Master configuration file
+
+rules:
+  # Import all rule sets
+  - id: semgrep-ruleset-import
+    patterns:
+      - pattern: placeholder  # This is just a placeholder
+    message: "This file imports all Semgrep rule sets for Eclipse Milo"
+    languages: [java]
+    severity: INFO
+    metadata:
+      category: security
+      description: "Master configuration for OPC UA security scanning"
+
+# To use this configuration, run:
+#   semgrep --config .semgrep/
+# 
+# This will automatically scan with all rule files in this directory:
+#   - security-policy-rules.yaml (5 rules)
+#   - hardcoded-secrets-rules.yaml (5 rules)
+#   - crypto-weaknesses-rules.yaml (6 rules)
+#   - certificate-key-management-rules.yaml (6 rules)
+#   - authentication-authorization-rules.yaml (6 rules)
+#
+# Total: 28 security rules for OPC UA implementations
