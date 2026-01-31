@@ -22,6 +22,15 @@ class XmlSerializationUtil {
 
   private XmlSerializationUtil() {}
 
+  /** A shared {@link XMLInputFactory} that has been configured securely to prevent XXE attacks. */
+  private static final XMLInputFactory SHARED_XML_INPUT_FACTORY = XMLInputFactory.newInstance();
+
+  static {
+    // XXE Prevention - disable external entity processing
+    SHARED_XML_INPUT_FACTORY.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
+    SHARED_XML_INPUT_FACTORY.setProperty(XMLInputFactory.SUPPORT_DTD, false);
+  }
+
   /**
    * Encodes a DataType Name or Structure Field Name for use in XML DataEncoding.
    *
@@ -74,8 +83,8 @@ class XmlSerializationUtil {
   static void writeXmlFragment(XMLStreamWriter writer, String xmlFragment)
       throws XMLStreamException {
 
-    XMLInputFactory inputFactory = XMLInputFactory.newInstance();
-    XMLStreamReader reader = inputFactory.createXMLStreamReader(new StringReader(xmlFragment));
+    XMLStreamReader reader =
+        SHARED_XML_INPUT_FACTORY.createXMLStreamReader(new StringReader(xmlFragment));
 
     while (reader.hasNext()) {
       int eventType = reader.next();
